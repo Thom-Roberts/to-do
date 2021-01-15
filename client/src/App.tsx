@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
-import { Container, Loader, SegmentGroup,  } from 'semantic-ui-react';
+import { Container, Input, Loader, SegmentGroup,  } from 'semantic-ui-react';
 import List from './components/list';
 import { Item, ItemResponse } from './interfaces/item';
 import Add from './components/add';
 
 export default function App() {
 	const [ loading, setLoading ] = useState(true);
+	const [ user, setUser ] = useState(FetchFromStorage());
 	const [ items, setItems ] = useState<Item[]>([]);
 	const [ addText, setAddText ] = useState(''); // Used for clearing text when a new item is added
 	const [ itemToToggle, setItemToToggle ] = useState<Item>();
@@ -32,14 +33,41 @@ export default function App() {
 	}, []);
 
 	/**
+	 * Create user
+	 */
+	useEffect(() => {
+		if(loading)
+			return;
+
+		const element = document.getElementById('first_id');
+		if(!element)
+			return;
+		
+		async function enterPressed(e: KeyboardEvent) {
+			if(e.key === 'Enter' || e.keyCode === 13) {
+				const input = document.getElementById('first_id') as HTMLInputElement;
+				
+				// Don't add an empty item
+				if(input.value === '' || input?.value === undefined)
+					return;
+				
+				GetUser(input.value);
+			}
+		}
+
+		element.addEventListener('keydown', enterPressed);
+
+		return () => element.removeEventListener('keydown', enterPressed);
+	}, [ loading ]);
+
+	/**
 	 *Add item logic
 	 */
 	useEffect(() => {
 		// Can't add the logic unless it is active
-		if(loading)
+		if(loading || user === '')
 			return;
 
-		console.log("Called use effect");
 		let input = document.querySelector('input');
 		
 		async function enterPressed(e: KeyboardEvent) {
@@ -59,7 +87,7 @@ export default function App() {
 			console.log('Removing event listener');
 			input?.removeEventListener('keydown', enterPressed);
 		}
-	}, [ loading ]);
+	}, [ loading, user ]);
 
 	/**
 	 * Toggle complete logic
@@ -154,6 +182,20 @@ export default function App() {
 		}
 	}
 
+	async function GetUser(user: string) {
+		console.log('Called get user');
+		try {
+			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
+			console.dir(response);
+			sessionStorage.setItem('User', user);
+			setUser(user);
+			setItems(response.data.items);
+		}
+		catch(err) {
+			console.error(err);
+		}
+	}
+
 	return (
 		<Container>
 			{
@@ -161,7 +203,15 @@ export default function App() {
 				<Loader />
 			}
 			{
-				!loading &&
+				!loading && user === '' &&
+				<Input 
+					placeholder='Username'
+					id='first_id'
+				/>
+			}
+
+			{
+				!loading && user !== '' &&
 				<SegmentGroup>
 					<List 
 						items={
@@ -178,4 +228,9 @@ export default function App() {
 			}
 		</Container>
 	);
+}
+
+function FetchFromStorage(): string {
+	const val = sessionStorage.getItem('User');
+	return val ? val : '';
 }

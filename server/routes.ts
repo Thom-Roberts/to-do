@@ -5,7 +5,6 @@ import fs from 'fs/promises';
 export const router = Router();
 
 interface ItemsSchema {
-	guid: string;
 	user: string;
 	items: Item[];
 }
@@ -20,6 +19,44 @@ const ITEMS_PATH = path.join(__dirname, 'items.json');
 
 router.route('/').get((req, res) => {
 	res.sendStatus(200);
+});
+
+router.route('/user').get(async (req, res) => {
+	if(!req.query.user) {
+		console.log('No user in request headers.');
+		res.status(400).send('User must be specified');
+		return;
+	}
+
+	try {
+		const fileContents: ItemsSchema[] = JSON.parse(await fs.readFile(ITEMS_PATH, { encoding: 'utf8'}));
+	
+		const obj = fileContents.filter(content => content.user === req.query.user);
+
+		if(obj.length === 1) {
+			res.status(200).send(obj[0]);
+			return;
+		}
+		else {
+			// Add user
+
+			// Return new user
+			let objToReturn: ItemsSchema = {
+				user: req.query.user as string,
+				items: []
+			};
+			fileContents.push(objToReturn);
+
+			await fs.writeFile(ITEMS_PATH, JSON.stringify(fileContents));
+			res.status(200).send(objToReturn);
+			return;
+		}
+	}
+	catch(err) {
+		console.error('Something went wrong trying to create a user');
+		console.log(req.query);
+		res.sendStatus(500);
+	}
 });
 
 router.route('/items').get(async (req, res) => {
@@ -39,7 +76,6 @@ router.route('/items').get(async (req, res) => {
 		if(obj.length === 0) {
 			console.log('User has no items yet. Setting up a list for them.');
 			objToReturn = {
-				guid: uuidv4(),
 				user: req.query.user as string,
 				items: [],
 			};
@@ -138,6 +174,7 @@ router.route('/delete_item').delete(async (req, res) => {
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	const temp = userObj[0];
@@ -146,6 +183,7 @@ router.route('/delete_item').delete(async (req, res) => {
 	if(idx === -1) {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	temp.items.splice(idx, 1);

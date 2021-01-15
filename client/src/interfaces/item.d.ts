@@ -1,5 +1,4 @@
 export interface ItemResponse {
-	guid: string;
 	user: string;
 	items: Item[];
 }

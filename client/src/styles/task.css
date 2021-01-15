@@ -1,0 +1,7 @@
+.custom_trash_icon {
+	text-align: right;
+}
+
+.custom_trash_icon:hover {
+	cursor: pointer;
+}

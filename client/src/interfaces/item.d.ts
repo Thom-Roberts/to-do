@@ -4,7 +4,7 @@ export interface ItemResponse {
 }
 
 interface Item {
-	guid?: string;
+	guid?: string; // Optional for when I fetch it later
 	name: string;
 	completed: boolean;
 }

@@ -6,10 +6,15 @@ interface ListProps {
 	items: Item[];
 	toggleComplete: Function;
 	deleteItem: Function;
+	editItem: EditFunc;
+}
+
+interface EditFunc {
+	(task: string, guid: string): void;
 }
 
 export default function List(props: ListProps) {
-	const { items, toggleComplete, deleteItem } = props;
+	const { items, toggleComplete, deleteItem, editItem } = props;
 	return (	
 		<Fragment>
 			{
@@ -20,6 +25,7 @@ export default function List(props: ListProps) {
 							item={item}
 							toggleComplete={() => toggleComplete(item)}
 							deleteItem={() => deleteItem(item)}
+							doEdit={editItem}
 						/>
 					);
 				})

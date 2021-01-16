@@ -12,6 +12,7 @@ export default function Add(props: AddProps) {
 	return (
 		<Segment>
 			<Input
+				id='new_task_input'
 				icon='plus'
 				transparent
 				fluid

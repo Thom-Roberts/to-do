@@ -29,7 +29,7 @@ router.route('/user').get(async (req, res) => {
 	}
 
 	try {
-		const fileContents: ItemsSchema[] = JSON.parse(await fs.readFile(ITEMS_PATH, { encoding: 'utf8'}));
+		const fileContents: ItemsSchema[] = await GetFileContents();
 	
 		const obj = fileContents.filter(content => content.user === req.query.user);
 
@@ -39,8 +39,6 @@ router.route('/user').get(async (req, res) => {
 		}
 		else {
 			// Add user
-
-			// Return new user
 			let objToReturn: ItemsSchema = {
 				user: req.query.user as string,
 				items: []
@@ -48,6 +46,8 @@ router.route('/user').get(async (req, res) => {
 			fileContents.push(objToReturn);
 
 			await fs.writeFile(ITEMS_PATH, JSON.stringify(fileContents));
+			// Return new user
+
 			res.status(200).send(objToReturn);
 			return;
 		}
@@ -67,7 +67,7 @@ router.route('/items').get(async (req, res) => {
 	}
 
 	try {
-		const fileContents: ItemsSchema[] = JSON.parse(await fs.readFile(ITEMS_PATH, { encoding: 'utf8'}));
+		const fileContents: ItemsSchema[] = await GetFileContents();
 	
 		const obj = fileContents.filter(content => content.user === req.query.user);
 
@@ -129,6 +129,34 @@ router.route('/add_item').post(async (req, res) => {
 
 	SetFileContents(fileContents);
 	res.status(200).send(guid);
+});
+
+router.route('/update_task').put(async (req, res) => {
+	if(!req.body) {
+		console.log('No body.');
+		res.status(400).send('Item must have a body.');
+	}
+
+	const { user, guid, text }: { user: string, guid: string, text: string} = req.body;
+	const fileContents = await GetFileContents();
+	
+	// Verify user exists
+	const userObj = fileContents.filter(content => content.user === user);
+	if(userObj.length === 0 || userObj.length > 1) {
+		console.error('User does not exist or duplicate detected. This should never happen.');
+		res.sendStatus(500);
+	}
+
+	const temp = userObj[0];
+	const tempItemFilter = temp.items.filter(item => item.guid === guid);
+	if(tempItemFilter.length === 0 || tempItemFilter.length > 1)  {
+		console.error('Item does not exist or duplicate detected. This should never happen.');
+		res.sendStatus(500);
+	}
+
+	tempItemFilter[0].name = text;
+	await SetFileContents(fileContents);
+	res.sendStatus(200);
 });
 
 router.route('/toggle_complete').post(async (req, res) => {

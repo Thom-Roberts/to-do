@@ -1,5 +1,5 @@
-import React from 'react';
-import { Grid, Icon, Segment } from 'semantic-ui-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Grid, Icon, Input, Segment } from 'semantic-ui-react';
 import { Item } from '../interfaces/item';
 
 import '../styles/task.css';
@@ -8,10 +8,46 @@ interface ItemProps {
 	item: Item;
 	toggleComplete: Function;
 	deleteItem: Function;
+	doEdit: EditFunc;
+}
+
+interface EditFunc {
+	(task: string, guid: string) : void;
 }
 
 export default function Task(props: ItemProps) {
-	const { item, toggleComplete, deleteItem } = props;
+	const { item, toggleComplete, deleteItem, doEdit } = props;
+	const [ text, setText ] = useState(item.name);
+
+	const enterPressed = useCallback((e: KeyboardEvent) => {
+		if(e.key === 'Enter' || e.keyCode === 13) {
+			console.log('Enter hit');
+		
+			const input = document.getElementById(item.guid as string) as HTMLInputElement;
+			
+			// Don't add an empty item
+			if(input.value === '' || input?.value === undefined)
+				return;
+			
+			doEdit(input.value, item.guid as string);
+		}
+	}, [ doEdit, item ]); 
+
+	useEffect(() => {	
+		console.log('Starting attachment');
+		const element = document.getElementById(item.guid as string);
+		
+		if(!element) {
+			console.error('Failed to find text input for item')
+			console.log(item);
+			return;
+		}
+		
+		element.addEventListener('keydown', enterPressed);
+
+		return () => element.removeEventListener('keydown', enterPressed);
+		// Leaving out enterPressed dependency for now, still need to figure out how to not call multiple times
+	}, [ item ]);
 
 	return (
 		<Segment>
@@ -25,7 +61,14 @@ export default function Task(props: ItemProps) {
 					/>
 				</Grid.Column>
 				<Grid.Column width={14}>
-					{item.name}
+					<Input
+						id={item.guid}
+						fluid
+						transparent
+						defaultValue={text}
+						
+						onChange={(e, data) => setText(data.value)}
+					/>
 				</Grid.Column>
 				<Grid.Column width={1}>
 					<Icon

@@ -10,14 +10,17 @@ export default function App() {
 	const [ user, setUser ] = useState(FetchFromStorage());
 	const [ items, setItems ] = useState<Item[]>([]);
 	const [ addText, setAddText ] = useState(''); // Used for clearing text when a new item is added
+	const [ editedText, setEditedText ] = useState<{text: string, guid: string}>();
 	const [ itemToToggle, setItemToToggle ] = useState<Item>();
 	const [ itemToDelete, setItemToDelete ] = useState<Item>();
 
 	/**
-	 * Fetch items on start
+	 * Fetch items on start if user is present
 	 */
 	useEffect(() => {
 		(async() => {
+			if(user === '')
+				return;
 			try {
 				const itemsResponse: AxiosResponse<ItemResponse> = await axios.get('/api/items', { params: { user: 'Custom' } });
 				setItems(itemsResponse.data.items);
@@ -30,7 +33,7 @@ export default function App() {
 				setLoading(false);
 			}
 		})();
-	}, []);
+	}, [ user ]);
 
 	/**
 	 * Create user
@@ -39,13 +42,13 @@ export default function App() {
 		if(loading)
 			return;
 
-		const element = document.getElementById('first_id');
+		const element = document.getElementById('user_input');
 		if(!element)
 			return;
 		
 		async function enterPressed(e: KeyboardEvent) {
 			if(e.key === 'Enter' || e.keyCode === 13) {
-				const input = document.getElementById('first_id') as HTMLInputElement;
+				const input = document.getElementById('user_input') as HTMLInputElement;
 				
 				// Don't add an empty item
 				if(input.value === '' || input?.value === undefined)
@@ -68,11 +71,11 @@ export default function App() {
 		if(loading || user === '')
 			return;
 
-		let input = document.querySelector('input');
+		let input = document.getElementById('new_task_input');
 		
 		async function enterPressed(e: KeyboardEvent) {
 			if(e.key === 'Enter' || e.keyCode === 13) {
-				let input = document.querySelector('input');
+				let input = document.getElementById('new_task_input') as HTMLInputElement;
 				// Don't add an empty item
 				if(input?.value === '' || input?.value === undefined)
 					return;
@@ -88,6 +91,55 @@ export default function App() {
 			input?.removeEventListener('keydown', enterPressed);
 		}
 	}, [ loading, user ]);
+
+	/**
+	 * Edit item logic
+	 */
+	useEffect(() => {
+		if(!editedText || !editedText.guid || !editedText.text)
+			return;
+		
+		const { text, guid } = editedText;
+		// See if a change was actually made
+		// Find the task
+		const task = items.filter(item => item.guid === guid);
+		if(task.length === 0) {
+			console.error('No tasks found with that guid, this should never happen');
+			return;
+		}
+		if(task.length > 1) {
+			console.error('More than one task found for that guid, this should never happen');
+			return;
+		}
+		// No change made
+		if(task[0].name === text)
+			return;
+
+		(async() => {
+			try {
+				// Submit update to server
+				await axios.put('/api/update_task', {
+					user,
+					guid,
+					text
+				});
+			}
+			catch(err) {
+				console.error('Unable to update to-do item.');
+				console.error(err);
+			}
+			finally {
+				setEditedText({guid: '', text: ''});
+				// Update the tasks by changing the text on the one
+				setItems(prevItems => {
+					const sliced = prevItems.slice();
+					const idx = sliced.findIndex(item => item.guid === guid);
+					sliced[idx].name = text;
+					return sliced;
+				});
+			}
+		})();
+	}, [ editedText, items, user ]);
 
 	/**
 	 * Toggle complete logic
@@ -206,7 +258,7 @@ export default function App() {
 				!loading && user === '' &&
 				<Input 
 					placeholder='Username'
-					id='first_id'
+					id='user_input'
 				/>
 			}
 
@@ -219,6 +271,9 @@ export default function App() {
 						}
 						toggleComplete={setItemToToggle}
 						deleteItem={setItemToDelete}
+						editItem={(text: string, guid: string) => {
+							setEditedText({text, guid})
+						}}
 					/>
 					<Add 
 						inputText={addText}

@@ -50,6 +50,16 @@ export default function ListLabel(props: ListLabelProps) {
 		setText('');
 	}, [CreateList]);
 
+	useEffect(() => {
+		if(openListInput) {
+			const input = document.getElementById('new_list_input') as HTMLInputElement;
+			input.focus();
+		}
+		else {
+			setText('');
+		}
+	}, [ openListInput ]);
+
 	const options: DropdownItemProps[] = lists.map((list, idx) => {
 		return {
 			key: list,
@@ -77,6 +87,7 @@ export default function ListLabel(props: ListLabelProps) {
 					id='new_list_input'
 					value={text}
 					onChange={(e, data) => setText(data.value)}
+					onBlur={() => setOpenListInput(false)}
 				/>
 			}
 		</div>

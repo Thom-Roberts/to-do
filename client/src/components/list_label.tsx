@@ -45,6 +45,11 @@ export default function ListLabel(props: ListLabelProps) {
 	}, [ openListInput ]);
 
 	const Submit = useCallback((txt) => {
+		if(lists.findIndex((val) => val === txt) !== -1) {
+			console.log('Duplicate list name exists.');
+			return;
+		}
+
 		CreateList(txt);
 		setOpenListInput(false);
 		setText('');

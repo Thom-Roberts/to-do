@@ -79,7 +79,7 @@ export default function App() {
 		if(activeList === -1)
 			return;
 		setItems(lists[activeList].items);
-	}, [ items, activeList ])
+	}, [ lists, activeList ])
 
 	const handleAdd = useCallback(async(val: string) => {
 		// Add it to the list of items
@@ -107,13 +107,26 @@ export default function App() {
 			});
 		}
 		catch(err) {
-			console.error(err);
+			if (err.response) {
+				// Request made and server responded
+				console.log(err.response.data);
+				console.log(err.response.status);
+				console.log(err.response.headers);
+			} 
+			else if (err.request) {
+				// The request was made but no response was received
+				console.log(err.request);
+			} 
+			else {
+				// Something happened in setting up the request that triggered an Error
+				console.log('Error', err.message);
+			}
 		}
 		finally {
 			// Clear the Add component	
 			setAddText('');
 		}
-	}, [ items, activeList ]);
+	}, [ user, lists, items, activeList ]);
 
 	/**
 	 * Add item setup
@@ -177,8 +190,20 @@ export default function App() {
 				});
 			}
 			catch(err) {
-				console.error('Unable to update to-do item.');
-				console.error(err);
+				if (err.response) {
+					// Request made and server responded
+					console.log(err.response.data);
+					console.log(err.response.status);
+					console.log(err.response.headers);
+				} 
+				else if (err.request) {
+					// The request was made but no response was received
+					console.log(err.request);
+				} 
+				else {
+					// Something happened in setting up the request that triggered an Error
+					console.log('Error', err.message);
+				}
 			}
 			finally {
 				setEditedText({guid: '', text: ''});
@@ -214,7 +239,20 @@ export default function App() {
 				await toggleOp;
 			}
 			catch(err) {
-				console.error(err);
+				if (err.response) {
+					// Request made and server responded
+					console.log(err.response.data);
+					console.log(err.response.status);
+					console.log(err.response.headers);
+				} 
+				else if (err.request) {
+					// The request was made but no response was received
+					console.log(err.request);
+				} 
+				else {
+					// Something happened in setting up the request that triggered an Error
+					console.log('Error', err.message);
+				}
 			}
 			finally {
 				setItemToToggle(undefined);
@@ -245,7 +283,20 @@ export default function App() {
 				await deleteOp;
 			}
 			catch(err) {
-				console.error(err);
+				if (err.response) {
+					// Request made and server responded
+					console.log(err.response.data);
+					console.log(err.response.status);
+					console.log(err.response.headers);
+				} 
+				else if (err.request) {
+					// The request was made but no response was received
+					console.log(err.request);
+				} 
+				else {
+					// Something happened in setting up the request that triggered an Error
+					console.log('Error', err.message);
+				}
 			}
 			finally {
 				setItemToDelete(undefined);
@@ -270,7 +321,20 @@ export default function App() {
 			setItems(response.data.lists[0].items);
 		}
 		catch(err) {
-			console.error(err);
+			if (err.response) {
+				// Request made and server responded
+				console.log(err.response.data);
+				console.log(err.response.status);
+				console.log(err.response.headers);
+			} 
+			else if (err.request) {
+				// The request was made but no response was received
+				console.log(err.request);
+			} 
+			else {
+				// Something happened in setting up the request that triggered an Error
+				console.log('Error', err.message);
+			}
 		}
 	}
 
@@ -280,16 +344,26 @@ export default function App() {
 
 			// Refresh data and set as new list
 			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
-			const listIdx = response.data.lists.findIndex(l => {
-				return l.name === listName;
-			});
+			const idx = response.data.lists.length - 1;
 			setLists(response.data.lists);
-			setActiveList(listIdx);
-			setItems(response.data.lists[listIdx].items);
+			setActiveList(idx);
+			setItems(response.data.lists[idx].items);
 		}
-		catch(err) {
-			console.error('Failed to create list. This should never happen.');
-			console.log(err);
+		catch(err: any) {
+			if (err.response) {
+				// Request made and server responded
+				console.log(err.response.data);
+				console.log(err.response.status);
+				console.log(err.response.headers);
+			} 
+			else if (err.request) {
+				// The request was made but no response was received
+				console.log(err.request);
+			} 
+			else {
+				// Something happened in setting up the request that triggered an Error
+				console.log('Error', err.message);
+			}
 		}
 	}, [ user ]);
 

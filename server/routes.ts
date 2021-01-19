@@ -127,7 +127,6 @@ router.route('/add_list').post(async (req, res) => {
 
 	const { user, list }: { user: string, list: string } = req.body;
 	const fileContents = await GetFileContents();
-	console.log([user, list]);
 
 	// Verify user exists
 	const userObj = fileContents.filter(content => content.user === user);

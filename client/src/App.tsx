@@ -81,6 +81,39 @@ export default function App() {
 		setItems(lists[activeList].items);
 	}, [ items, activeList ])
 
+	const handleAdd = useCallback(async(val: string) => {
+		// Add it to the list of items
+		const copy = items.slice();
+		copy.push({
+			name: val,
+			completed: false,
+		});
+		setLists((prevLists) => {
+			const temp = prevLists.slice();
+			temp[activeList].items = copy;
+			return temp;
+		});
+		setItems(copy);
+
+		try {
+			// Attempt to communicate with the server
+			const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user, list: lists[activeList].name, task: val });
+
+			setItems(prevItems => {
+				const copy = prevItems.slice();
+				const idx = copy.findIndex(item => item.name === val);
+				copy[idx].guid = guid.data;
+				return copy;
+			});
+		}
+		catch(err) {
+			console.error(err);
+		}
+		finally {
+			// Clear the Add component	
+			setAddText('');
+		}
+	}, [ items, activeList ]);
 
 	/**
 	 * Add item setup
@@ -91,37 +124,6 @@ export default function App() {
 			return;
 
 		let input = document.getElementById('new_task_input');
-		
-		async function handleAdd(val: string) {
-			// Add it to the list of items
-			setItems((prevItems) => {
-				const copy = prevItems.slice();
-				copy.push({
-					name: val,
-					completed: false,
-				});
-				return copy;
-			});
-			
-			try {
-				// Attempt to communicate with the server
-				const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user, list: lists[activeList].name, task: val });
-			
-				setItems(prevItems => {
-					const copy = prevItems.slice();
-					const idx = copy.findIndex(item => item.name === val);
-					copy[idx].guid = guid.data;
-					return copy;
-				});
-			}
-			catch(err) {
-				console.error(err);
-			}
-			finally {
-				// Clear the Add component	
-				setAddText('');
-			}
-		}
 
 		async function enterPressed(e: KeyboardEvent) {
 			if(e.key === 'Enter' || e.keyCode === 13) {
@@ -139,7 +141,7 @@ export default function App() {
 		return () => {
 			input?.removeEventListener('keydown', enterPressed);
 		}
-	}, [ loading, user ]);
+	}, [ loading, user, handleAdd ]);
 
 	/**
 	 * Edit item logic

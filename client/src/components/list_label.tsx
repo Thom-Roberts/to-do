@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Icon, Input } from 'semantic-ui-react';
+import { Button, Dropdown, DropdownItemProps, Icon, Input } from 'semantic-ui-react';
 
 interface ListLabelProps {
 	lists: string[];
 	activeList: number;
 	CreateList: CreateListFunction;
+	ChangeList: Function;
 }
 
 interface CreateListFunction {
-	(index: number) : void;
+	(index: string) : void;
 }
 
 export default function ListLabel(props: ListLabelProps) {
-	const { lists, activeList, CreateList } = props;
+	const { lists, activeList, CreateList, ChangeList } = props;
 
 	const [ openListInput, setOpenListInput ] = useState(false);
 	const [ text, setText ] = useState('');
@@ -22,6 +23,7 @@ export default function ListLabel(props: ListLabelProps) {
 		if(!openListInput)
 			return;
 		
+		console.log('Searching for element');
 		const element = document.getElementById('new_list_input');
 		if(!element)
 			return;
@@ -33,26 +35,40 @@ export default function ListLabel(props: ListLabelProps) {
 				// Don't add an empty item
 				if(input.value === '' || input?.value === undefined)
 					return;
-				
-				Submit();
+				Submit(input.value);
 			}
 		}
 
+		console.log('Attaching event listener');
 		element.addEventListener('keydown', enterPressed);
 
 		return () => element.removeEventListener('keydown', enterPressed);
 
 	}, [ openListInput ]);
 
-	const Submit = useCallback(() => {
-		CreateList(lists.indexOf(text));
+	const Submit = useCallback((txt) => {
+		console.log('Text in submit: ' + txt);
+		CreateList(txt);
 		setOpenListInput(false);
 		setText('');
-	}, [lists, text]);
+	}, [CreateList]);
+
+	const options: DropdownItemProps[] = lists.map((list, idx) => {
+		return {
+			key: list,
+			text: list,
+			value: idx
+		};
+	});
 
 	return (
 		<div>
-			
+			<Dropdown
+				selection
+				options={options}
+				placeholder={lists[activeList]}
+				onChange={(e, data) => ChangeList(data.value)}
+			/>
 			<h4>{lists[activeList]}</h4>
 			<Button onClick={() => setOpenListInput(true)}>
 				<Icon name='plus' />

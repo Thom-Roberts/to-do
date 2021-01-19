@@ -10,7 +10,7 @@ export default function App() {
 	const [ loading, setLoading ] = useState(true);
 	const [ user, setUser ] = useState(FetchFromStorage());
 	const [ lists, setLists ] = useState<List[]>([]);
-	const [ activeList, setActiveList ] = useState<number>(-1);
+	const [ activeList, setActiveList ] = useState(-1);
 	const [ items, setItems ] = useState<Item[]>([]);
 	const [ addText, setAddText ] = useState(''); // Used for clearing text when a new item is added
 	const [ editedText, setEditedText ] = useState<{text: string, guid: string}>();
@@ -22,8 +22,10 @@ export default function App() {
 	 */
 	useEffect(() => {
 		(async() => {
-			if(user === '')
+			if(user === '') {
+				setLoading(false);
 				return;
+			}
 			try {
 				const itemsResponse: AxiosResponse<ItemResponse> = await axios.get('/api/items', { params: { user: 'Custom' } });
 				setLists(itemsResponse.data.lists);
@@ -100,6 +102,18 @@ export default function App() {
 			setAddText('');
 		}
 	}, [ activeList ]);
+
+	/**
+	 * Change list logic
+	 */
+	useEffect(() => {
+		// Wait for initialization
+		if(activeList === -1)
+			return;
+		console.log('Changing list items');
+		setItems(lists[activeList].items);
+	}, [ items, activeList ])
+
 
 	/**
 	 * Add item setup
@@ -257,6 +271,27 @@ export default function App() {
 		}
 	}
 
+	const CreateList = useCallback(async(listName: string) => {
+		try {
+			await axios.post('/api/add_list', { user, list: listName });
+
+			// Refresh data and set as new list
+			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
+			const listIdx = response.data.lists.findIndex(l => {
+				return l.name === listName;
+			});
+			setLists(response.data.lists);
+			setActiveList(listIdx);
+			setItems(response.data.lists[listIdx].items);
+		}
+		catch(err) {
+			console.error('Failed to create list. This should never happen.');
+			console.log(err);
+		}
+	}, [ user ]);
+
+	
+
 	return (
 		<Container>
 			{
@@ -280,7 +315,8 @@ export default function App() {
 							lists.map(list => {return list.name})
 						}
 						activeList={activeList}
-						CreateList={(newListIndex) => setActiveList(newListIndex)}
+						CreateList={(newList) => CreateList(newList)}
+						ChangeList={(newList: number) => setActiveList(newList)}
 					/>
 					<SegmentGroup>
 						<ListComponent 

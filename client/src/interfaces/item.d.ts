@@ -1,5 +1,10 @@
 export interface ItemResponse {
 	user: string;
+	lists: List[];
+}
+
+interface List {
+	name: string;
 	items: Item[];
 }
 

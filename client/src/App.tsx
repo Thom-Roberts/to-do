@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { Container, Input, Loader, SegmentGroup,  } from 'semantic-ui-react';
-import List from './components/list';
-import { Item, ItemResponse } from './interfaces/item';
+import ListComponent from './components/list';
+import { Item, ItemResponse, List } from './interfaces/item';
 import Add from './components/add';
+import ListLabel from './components/list_label';
 
 export default function App() {
 	const [ loading, setLoading ] = useState(true);
 	const [ user, setUser ] = useState(FetchFromStorage());
+	const [ lists, setLists ] = useState<List[]>([]);
+	const [ activeList, setActiveList ] = useState<number>(-1);
 	const [ items, setItems ] = useState<Item[]>([]);
 	const [ addText, setAddText ] = useState(''); // Used for clearing text when a new item is added
 	const [ editedText, setEditedText ] = useState<{text: string, guid: string}>();
@@ -23,7 +26,10 @@ export default function App() {
 				return;
 			try {
 				const itemsResponse: AxiosResponse<ItemResponse> = await axios.get('/api/items', { params: { user: 'Custom' } });
-				setItems(itemsResponse.data.items);
+				setLists(itemsResponse.data.lists);
+				setActiveList(0);
+				// First list is always default
+				setItems(itemsResponse.data.lists[0].items);
 			}
 			catch(err) {
 				console.error(err);
@@ -63,8 +69,40 @@ export default function App() {
 		return () => element.removeEventListener('keydown', enterPressed);
 	}, [ loading ]);
 
+	const handleAdd = useCallback(async (val: string) => {
+		console.log('Called handle add');
+		// Add it to the list of items
+		setItems((prevItems) => {
+			const copy = prevItems.slice();
+			copy.push({
+				name: val,
+				completed: false,
+			});
+			return copy;
+		});
+		
+		try {
+			// Attempt to communicate with the server
+			const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user: 'Custom', list: lists[activeList].name, task: val });
+		
+			setItems(prevItems => {
+				const copy = prevItems.slice();
+				const idx = copy.findIndex(item => item.name === val);
+				copy[idx].guid = guid.data;
+				return copy;
+			});
+		}
+		catch(err) {
+			console.error(err);
+		}
+		finally {
+			// Clear the Add component	
+			setAddText('');
+		}
+	}, [ activeList ]);
+
 	/**
-	 *Add item logic
+	 * Add item setup
 	 */
 	useEffect(() => {
 		// Can't add the logic unless it is active
@@ -90,7 +128,7 @@ export default function App() {
 			console.log('Removing event listener');
 			input?.removeEventListener('keydown', enterPressed);
 		}
-	}, [ loading, user ]);
+	}, [ loading, user, handleAdd ]);
 
 	/**
 	 * Edit item logic
@@ -121,6 +159,7 @@ export default function App() {
 				await axios.put('/api/update_task', {
 					user,
 					guid,
+					list: lists[activeList].name,
 					text
 				});
 			}
@@ -139,7 +178,7 @@ export default function App() {
 				});
 			}
 		})();
-	}, [ editedText, items, user ]);
+	}, [ editedText, items, activeList, user ]);
 
 	/**
 	 * Toggle complete logic
@@ -156,7 +195,7 @@ export default function App() {
 					console.error('Length too large');
 				}
 
-				const toggleOp = axios.post('/api/toggle_complete', { user: 'Custom', task: itemToToggle.guid });
+				const toggleOp = axios.post('/api/toggle_complete', { user: 'Custom', list: lists[activeList].name, task: itemToToggle.guid });
 				temp[0].completed = !temp[0].completed;
 
 				await toggleOp;
@@ -169,7 +208,7 @@ export default function App() {
 				setItems(copy);
 			}
 		})();
-	}, [itemToToggle, items]);
+	}, [itemToToggle, activeList, lists, items]);
 
 	/**
 	 * Delete item logic
@@ -187,7 +226,7 @@ export default function App() {
 					return;
 				}
 
-				const deleteOp = axios.delete('/api/delete_item', { params: { user: 'Custom', task: itemToDelete.guid }});
+				const deleteOp = axios.delete('/api/delete_item', { params: { user: 'Custom', list: activeList, task: itemToDelete.guid }});
 
 				copy.splice(itemIndex, 1);
 				await deleteOp;
@@ -200,39 +239,7 @@ export default function App() {
 				setItems(copy);
 			}
 		})();
-	}, [itemToDelete, items]);
-
-	async function handleAdd(val: string) {
-		console.log('Called handle add');
-		// Add it to the list of items
-		setItems((prevItems) => {
-			const copy = prevItems.slice();
-			copy.push({
-				name: val,
-				completed: false,
-			});
-			return copy;
-		});
-		
-		try {
-			// Attempt to communicate with the server
-			const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user: 'Custom', task: val });
-		
-			setItems(prevItems => {
-				const copy = prevItems.slice();
-				const idx = copy.findIndex(item => item.name === val);
-				copy[idx].guid = guid.data;
-				return copy;
-			});
-		}
-		catch(err) {
-			console.error(err);
-		}
-		finally {
-			// Clear the Add component	
-			setAddText('');
-		}
-	}
+	}, [itemToDelete, activeList, items]);
 
 	async function GetUser(user: string) {
 		console.log('Called get user');
@@ -241,7 +248,9 @@ export default function App() {
 			console.dir(response);
 			sessionStorage.setItem('User', user);
 			setUser(user);
-			setItems(response.data.items);
+			// Get the default list
+			setActiveList(0);
+			setItems(response.data.lists[0].items);
 		}
 		catch(err) {
 			console.error(err);
@@ -264,22 +273,32 @@ export default function App() {
 
 			{
 				!loading && user !== '' &&
-				<SegmentGroup>
-					<List 
-						items={
-							items
+				<div style={{paddingTop: 20}}>
+					<h3>{user}</h3>
+					<ListLabel
+						lists={
+							lists.map(list => {return list.name})
 						}
-						toggleComplete={setItemToToggle}
-						deleteItem={setItemToDelete}
-						editItem={(text: string, guid: string) => {
-							setEditedText({text, guid})
-						}}
+						activeList={activeList}
+						CreateList={(newListIndex) => setActiveList(newListIndex)}
 					/>
-					<Add 
-						inputText={addText}
-						setInput={setAddText}
-					/>
-				</SegmentGroup>
+					<SegmentGroup>
+						<ListComponent 
+							items={
+								items
+							}
+							toggleComplete={setItemToToggle}
+							deleteItem={setItemToDelete}
+							editItem={(text: string, guid: string) => {
+								setEditedText({text, guid})
+							}}
+						/>
+						<Add 
+							inputText={addText}
+							setInput={setAddText}
+						/>
+					</SegmentGroup>
+				</div>
 			}
 		</Container>
 	);

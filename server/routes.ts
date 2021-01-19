@@ -6,6 +6,11 @@ export const router = Router();
 
 interface ItemsSchema {
 	user: string;
+	lists: List[];
+}
+
+interface List {
+	name: string;
 	items: Item[];
 }
 
@@ -41,7 +46,12 @@ router.route('/user').get(async (req, res) => {
 			// Add user
 			let objToReturn: ItemsSchema = {
 				user: req.query.user as string,
-				items: []
+				lists: [
+					{
+						name: "Default",
+						items: []
+					}
+				],
 			};
 			fileContents.push(objToReturn);
 
@@ -77,7 +87,12 @@ router.route('/items').get(async (req, res) => {
 			console.log('User has no items yet. Setting up a list for them.');
 			objToReturn = {
 				user: req.query.user as string,
-				items: [],
+				lists: [
+					{
+						name: "Default",
+						items: []
+					}
+				],
 			};
 			console.log(objToReturn);
 			fileContents.push(
@@ -103,13 +118,53 @@ router.route('/items').get(async (req, res) => {
 	}
 });
 
+router.route('/add_list').post(async (req, res) => {
+	if(!req.body) {
+		console.log('No body.');
+		res.status(400).send('List must have a body.');
+		return;
+	}
+
+	const { user, list }: { user: string, list: string } = req.body;
+	const fileContents = await GetFileContents();
+
+	// Verify user exists
+	const userObj = fileContents.filter(content => content.user === user);
+	if(userObj.length === 0 || userObj.length > 1) {
+		console.error('User does not exist or duplicate detected. This should never happen.');
+		res.sendStatus(500);
+	}
+
+	// Test if list name exists already
+	const listObj = userObj[0].lists.filter(obj => {
+		obj.name === list;
+	});
+
+	if(listObj.length > 0) {
+		console.error('Duplicate list name found. Cannot complete request.');
+		res.status(400).send('Duplicate list name.');
+		return;
+	}
+
+	// Create list
+	userObj[0].lists.push({
+		name: list,
+		items: [],
+	});
+
+	await SetFileContents(fileContents);
+
+	res.sendStatus(200);
+});
+
 router.route('/add_item').post(async (req, res) => {
 	if(!req.body) {
 		console.log('No body.');
 		res.status(400).send('Item must have a body.');
+		return;
 	}
 	
-	const { user, task }: { user: string, task: string } = req.body;
+	const { user, list, task }: { user: string, list: string, task: string } = req.body;
 	const fileContents = await GetFileContents();
 	
 	// Verify user exists
@@ -120,8 +175,15 @@ router.route('/add_item').post(async (req, res) => {
 	}
 
 	const temp = userObj[0];
+	const temp2 = temp.lists.filter((l) => l.name === list);
+	if(temp2.length === 0 || temp2.length > 1) {
+		console.error('Duplicate lists found. This should never happen.');
+		res.sendStatus(500);
+		return;
+	}
+
 	const guid = uuidv4();
-	temp.items.push({
+	temp2[0].items.push({
 		name: task,
 		completed: false,
 		guid,
@@ -135,9 +197,10 @@ router.route('/update_task').put(async (req, res) => {
 	if(!req.body) {
 		console.log('No body.');
 		res.status(400).send('Item must have a body.');
+		return;
 	}
 
-	const { user, guid, text }: { user: string, guid: string, text: string} = req.body;
+	const { user, guid, list, text }: { user: string, guid: string, list: string, text: string} = req.body;
 	const fileContents = await GetFileContents();
 	
 	// Verify user exists
@@ -145,13 +208,22 @@ router.route('/update_task').put(async (req, res) => {
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	const temp = userObj[0];
-	const tempItemFilter = temp.items.filter(item => item.guid === guid);
+	const temp2 = temp.lists.filter((l) => l.name === list);
+	if(temp2.length === 0 || temp2.length > 1) {
+		console.error('Duplicate lists found. This should never happen.');
+		res.sendStatus(500);
+		return;
+	}
+
+	const tempItemFilter = temp2[0].items.filter(item => item.guid === guid);
 	if(tempItemFilter.length === 0 || tempItemFilter.length > 1)  {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	tempItemFilter[0].name = text;
@@ -163,9 +235,10 @@ router.route('/toggle_complete').post(async (req, res) => {
 	if(!req.body) {
 		console.log('No body.');
 		res.status(400).send('Item must have a body.');
+		return;
 	}
 
-	const { user, task }: { user: string, task: string } = req.body;
+	const { user, list, task }: { user: string, list: string, task: string } = req.body;
 	const fileContents = await GetFileContents();
 
 	// Verify user exists
@@ -173,13 +246,22 @@ router.route('/toggle_complete').post(async (req, res) => {
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	const temp = userObj[0];
-	const item = temp.items.filter(obj => obj.guid === task);
+	const temp2 = temp.lists.filter((l) => l.name === list);
+	if(temp2.length === 0 || temp2.length > 1) {
+		console.error('Duplicate lists found. This should never happen.');
+		res.sendStatus(500);
+		return;
+	}
+	
+	const item = temp2[0].items.filter(obj => obj.guid === task);
 	if(item.length === 0 || item.length > 1) {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
 		res.sendStatus(500);
+		return;
 	}
 
 	item[0].completed = !item[0].completed;
@@ -192,10 +274,11 @@ router.route('/delete_item').delete(async (req, res) => {
 	if(!req.query) {
 		console.log('No params');
 		res.status(400).send('User and task is required');
+		return;
 	}
 
 	// @ts-ignore
-	const { user, task }: { user: string, task: string } = req.query;
+	const { user, list, task }: { user: string, list: string, task: string } = req.query;
 	const fileContents = await GetFileContents();
 	
 	const userObj = fileContents.filter(content => content.user === user);
@@ -206,7 +289,15 @@ router.route('/delete_item').delete(async (req, res) => {
 	}
 
 	const temp = userObj[0];
-	const idx = temp.items.findIndex(val => val.guid === task);
+
+	const temp2 = temp.lists.filter((l) => l.name === list);
+	if(temp2.length === 0 || temp2.length > 1) {
+		console.error('Duplicate lists found. This should never happen.');
+		res.sendStatus(500);
+		return;
+	}
+
+	const idx = temp2[0].items.findIndex(val => val.guid === task);
 	
 	if(idx === -1) {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
@@ -214,7 +305,7 @@ router.route('/delete_item').delete(async (req, res) => {
 		return;
 	}
 
-	temp.items.splice(idx, 1);
+	temp2[0].items.splice(idx, 1);
 	SetFileContents(fileContents);
 
 	res.sendStatus(200);

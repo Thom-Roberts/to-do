@@ -8,7 +8,7 @@ import ListLabel from './components/list_label';
 
 export default function App() {
 	const [ loading, setLoading ] = useState(true);
-	const [ user, setUser ] = useState(FetchFromStorage());
+	const [ user, setUser ] = useState(FetchFromStorage('User'));
 	const [ lists, setLists ] = useState<List[]>([]);
 	const [ activeList, setActiveList ] = useState(-1);
 	const [ items, setItems ] = useState<Item[]>([]);
@@ -71,38 +71,6 @@ export default function App() {
 		return () => element.removeEventListener('keydown', enterPressed);
 	}, [ loading ]);
 
-	const handleAdd = useCallback(async (val: string) => {
-		console.log('Called handle add');
-		// Add it to the list of items
-		setItems((prevItems) => {
-			const copy = prevItems.slice();
-			copy.push({
-				name: val,
-				completed: false,
-			});
-			return copy;
-		});
-		
-		try {
-			// Attempt to communicate with the server
-			const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user: 'Custom', list: lists[activeList].name, task: val });
-		
-			setItems(prevItems => {
-				const copy = prevItems.slice();
-				const idx = copy.findIndex(item => item.name === val);
-				copy[idx].guid = guid.data;
-				return copy;
-			});
-		}
-		catch(err) {
-			console.error(err);
-		}
-		finally {
-			// Clear the Add component	
-			setAddText('');
-		}
-	}, [ activeList ]);
-
 	/**
 	 * Change list logic
 	 */
@@ -110,7 +78,6 @@ export default function App() {
 		// Wait for initialization
 		if(activeList === -1)
 			return;
-		console.log('Changing list items');
 		setItems(lists[activeList].items);
 	}, [ items, activeList ])
 
@@ -125,6 +92,37 @@ export default function App() {
 
 		let input = document.getElementById('new_task_input');
 		
+		async function handleAdd(val: string) {
+			// Add it to the list of items
+			setItems((prevItems) => {
+				const copy = prevItems.slice();
+				copy.push({
+					name: val,
+					completed: false,
+				});
+				return copy;
+			});
+			
+			try {
+				// Attempt to communicate with the server
+				const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user: 'Custom', list: lists[activeList].name, task: val });
+			
+				setItems(prevItems => {
+					const copy = prevItems.slice();
+					const idx = copy.findIndex(item => item.name === val);
+					copy[idx].guid = guid.data;
+					return copy;
+				});
+			}
+			catch(err) {
+				console.error(err);
+			}
+			finally {
+				// Clear the Add component	
+				setAddText('');
+			}
+		}
+
 		async function enterPressed(e: KeyboardEvent) {
 			if(e.key === 'Enter' || e.keyCode === 13) {
 				let input = document.getElementById('new_task_input') as HTMLInputElement;
@@ -139,10 +137,9 @@ export default function App() {
 		input?.addEventListener('keydown', enterPressed);
 
 		return () => {
-			console.log('Removing event listener');
 			input?.removeEventListener('keydown', enterPressed);
 		}
-	}, [ loading, user, handleAdd ]);
+	}, [ loading, user ]);
 
 	/**
 	 * Edit item logic
@@ -256,7 +253,6 @@ export default function App() {
 	}, [itemToDelete, activeList, items]);
 
 	async function GetUser(user: string) {
-		console.log('Called get user');
 		try {
 			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
 			console.dir(response);
@@ -289,8 +285,6 @@ export default function App() {
 			console.log(err);
 		}
 	}, [ user ]);
-
-	
 
 	return (
 		<Container>
@@ -340,7 +334,10 @@ export default function App() {
 	);
 }
 
-function FetchFromStorage(): string {
-	const val = sessionStorage.getItem('User');
-	return val ? val : '';
+function FetchFromStorage(key: string, number: boolean = false): string | number {
+	const val = sessionStorage.getItem(key);
+	if(number)
+		return val ? parseInt(val) : 0;
+	else
+		return val ? val : '';
 }

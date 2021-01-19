@@ -20,9 +20,7 @@ export default function Task(props: ItemProps) {
 	const [ text, setText ] = useState(item.name);
 
 	const enterPressed = useCallback((e: KeyboardEvent) => {
-		if(e.key === 'Enter' || e.keyCode === 13) {
-			console.log('Enter hit');
-		
+		if(e.key === 'Enter' || e.keyCode === 13) {		
 			const input = document.getElementById(item.guid as string) as HTMLInputElement;
 			
 			// Don't add an empty item
@@ -34,7 +32,6 @@ export default function Task(props: ItemProps) {
 	}, [ doEdit, item ]); 
 
 	useEffect(() => {	
-		console.log('Starting attachment');
 		const element = document.getElementById(item.guid as string);
 		
 		if(!element) {
@@ -48,6 +45,11 @@ export default function Task(props: ItemProps) {
 		return () => element.removeEventListener('keydown', enterPressed);
 		// Leaving out enterPressed dependency for now, still need to figure out how to not call multiple times
 	}, [ item ]);
+
+	// Update text when top level changes
+	useEffect(() => {
+		setText(item.name);
+	}, [item])
 
 	return (
 		<Segment>
@@ -65,8 +67,8 @@ export default function Task(props: ItemProps) {
 						id={item.guid}
 						fluid
 						transparent
-						defaultValue={text}
-						
+						value={text}
+						//defaultValue={text}
 						onChange={(e, data) => setText(data.value)}
 					/>
 				</Grid.Column>

@@ -23,7 +23,6 @@ export default function ListLabel(props: ListLabelProps) {
 		if(!openListInput)
 			return;
 		
-		console.log('Searching for element');
 		const element = document.getElementById('new_list_input');
 		if(!element)
 			return;
@@ -39,7 +38,6 @@ export default function ListLabel(props: ListLabelProps) {
 			}
 		}
 
-		console.log('Attaching event listener');
 		element.addEventListener('keydown', enterPressed);
 
 		return () => element.removeEventListener('keydown', enterPressed);
@@ -47,7 +45,6 @@ export default function ListLabel(props: ListLabelProps) {
 	}, [ openListInput ]);
 
 	const Submit = useCallback((txt) => {
-		console.log('Text in submit: ' + txt);
 		CreateList(txt);
 		setOpenListInput(false);
 		setText('');

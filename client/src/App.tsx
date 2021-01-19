@@ -105,7 +105,7 @@ export default function App() {
 			
 			try {
 				// Attempt to communicate with the server
-				const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user: 'Custom', list: lists[activeList].name, task: val });
+				const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user, list: lists[activeList].name, task: val });
 			
 				setItems(prevItems => {
 					const copy = prevItems.slice();
@@ -237,7 +237,7 @@ export default function App() {
 					return;
 				}
 
-				const deleteOp = axios.delete('/api/delete_item', { params: { user: 'Custom', list: activeList, task: itemToDelete.guid }});
+				const deleteOp = axios.delete('/api/delete_item', { params: { user, list: lists[activeList].name, task: itemToDelete.guid }});
 
 				copy.splice(itemIndex, 1);
 				await deleteOp;
@@ -247,10 +247,15 @@ export default function App() {
 			}
 			finally {
 				setItemToDelete(undefined);
+				setLists((prevLists) => {
+					const temp = prevLists.slice();
+					temp[activeList].items = copy;
+					return temp;
+				});
 				setItems(copy);
 			}
 		})();
-	}, [itemToDelete, activeList, items]);
+	}, [itemToDelete, activeList, lists, items]);
 
 	async function GetUser(user: string) {
 		try {

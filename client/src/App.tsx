@@ -83,7 +83,7 @@ export default function App() {
 	 * Change filter logic
 	 */
 	useEffect(() => {
-		if(loading)
+		if(activeList === -1)
 			return;
 		setItems(() => {
 			const all = lists[activeList].items;
@@ -105,12 +105,12 @@ export default function App() {
 	/**
 	 * Change list logic
 	 */
-	useEffect(() => {
-		// Wait for initialization
-		if(activeList === -1)
-			return;
-		setItems(lists[activeList].items);
-	}, [ lists, activeList ])
+	//useEffect(() => {
+	//	// Wait for initialization
+	//	if(activeList === -1)
+	//		return;
+	//	setItems(lists[activeList].items);
+	//}, [ lists, activeList ])
 
 	const handleAdd = useCallback(async(val: string) => {
 		// Add it to the list of items
@@ -124,12 +124,13 @@ export default function App() {
 			temp[activeList].items = copy;
 			return temp;
 		});
-		setItems(copy);
+		//setItems(copy);
 
 		try {
 			// Attempt to communicate with the server
 			const guid: AxiosResponse<string> = await axios.post('/api/add_item', { user, list: lists[activeList].name, task: val });
 
+			// TODO: This update the GUID for an item. Do this on the list object instead
 			setItems(prevItems => {
 				const copy = prevItems.slice();
 				const idx = copy.findIndex(item => item.name === val);
@@ -239,6 +240,7 @@ export default function App() {
 			finally {
 				setEditedText({guid: '', text: ''});
 				// Update the tasks by changing the text on the one
+				// TODO: Update this by changing the list object instead
 				setItems(prevItems => {
 					const sliced = prevItems.slice();
 					const idx = sliced.findIndex(item => item.guid === guid);
@@ -287,6 +289,7 @@ export default function App() {
 			}
 			finally {
 				setItemToToggle(undefined);
+				// TODO: Update the list object instead
 				setItems(copy);
 			}
 		})();
@@ -336,7 +339,7 @@ export default function App() {
 					temp[activeList].items = copy;
 					return temp;
 				});
-				setItems(copy);
+				//setItems(copy);
 			}
 		})();
 	}, [itemToDelete, activeList, lists, items]);

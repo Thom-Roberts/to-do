@@ -5,6 +5,13 @@ import ListComponent from './components/list';
 import { Item, ItemResponse, List } from './interfaces/item';
 import Add from './components/add';
 import ListLabel from './components/list_label';
+import Filter from './components/filter';
+
+enum FilterType {
+	All,
+	Incomplete,
+	Complete
+}
 
 export default function App() {
 	const [ loading, setLoading ] = useState(true);
@@ -12,6 +19,7 @@ export default function App() {
 	const [ lists, setLists ] = useState<List[]>([]);
 	const [ activeList, setActiveList ] = useState(-1);
 	const [ items, setItems ] = useState<Item[]>([]);
+	const [ filterType, setFilterType ] = useState<FilterType>(FilterType.All);
 	const [ addText, setAddText ] = useState(''); // Used for clearing text when a new item is added
 	const [ editedText, setEditedText ] = useState<{text: string, guid: string}>();
 	const [ itemToToggle, setItemToToggle ] = useState<Item>();
@@ -70,6 +78,29 @@ export default function App() {
 
 		return () => element.removeEventListener('keydown', enterPressed);
 	}, [ loading ]);
+
+	/**
+	 * Change filter logic
+	 */
+	useEffect(() => {
+		if(loading)
+			return;
+		setItems(() => {
+			const all = lists[activeList].items;
+			if(filterType === FilterType.All)
+				return all;
+			else if(filterType === FilterType.Complete) {
+				return all.filter(item => {
+					return item.completed
+				});
+			}
+			else {
+				return all.filter(item => {
+					return !item.completed
+				});
+			}
+		});
+	}, [ lists, activeList, filterType ]);
 
 	/**
 	 * Change list logic
@@ -384,7 +415,7 @@ export default function App() {
 			{
 				!loading && user !== '' &&
 				<div style={{paddingTop: 20}}>
-					<h3>{user}</h3>
+					<h3>User: {user}</h3>
 					<ListLabel
 						lists={
 							lists.map(list => {return list.name})
@@ -392,6 +423,9 @@ export default function App() {
 						activeList={activeList}
 						CreateList={(newList) => CreateList(newList)}
 						ChangeList={(newList: number) => setActiveList(newList)}
+					/>
+					<Filter
+						ApplyFilter={(x, y) => setFilterType(ExtractFilter(x, y))}
 					/>
 					<SegmentGroup>
 						<ListComponent 
@@ -421,4 +455,15 @@ function FetchFromStorage(key: string, number: boolean = false): string | number
 		return val ? parseInt(val) : 0;
 	else
 		return val ? val : '';
+}
+
+function ExtractFilter(showIncomplete: boolean, showComplete: boolean): FilterType {
+	// Running XOR. If they are different, then filter.
+	if(showIncomplete !== showComplete) {
+		if(showIncomplete)
+			return FilterType.Incomplete;
+		return FilterType.Complete;
+	}
+	// Otherwise, show all
+	return FilterType.All;
 }

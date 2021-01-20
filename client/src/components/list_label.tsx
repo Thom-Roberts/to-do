@@ -81,9 +81,9 @@ export default function ListLabel(props: ListLabelProps) {
 				placeholder={lists[activeList]}
 				onChange={(e, data) => ChangeList(data.value)}
 			/>
-			<h4>{lists[activeList]}</h4>
+			<h4>List: {lists[activeList]}</h4>
 			<Button onClick={() => setOpenListInput(true)}>
-				<Icon name='plus' />
+				<Icon name='plus' /> Create List
 			</Button>
 
 			{

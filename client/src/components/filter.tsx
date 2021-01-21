@@ -35,7 +35,7 @@ export default function Filter(props: FilterProps) {
 	return (
 		<Popup
 			trigger={
-				<Button icon='filter' />
+				<Button icon='filter'/>
 			}
 			on={'click'}
 			content={

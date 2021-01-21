@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
-import { Container, Input, Loader, SegmentGroup,  } from 'semantic-ui-react';
+import { Container, Grid, Input, Loader, SegmentGroup,  } from 'semantic-ui-react';
 import ListComponent from './components/list';
 import { Item, ItemResponse, List } from './interfaces/item';
 import Add from './components/add';
@@ -417,17 +417,23 @@ export default function App() {
 				!loading && user !== '' &&
 				<div style={{paddingTop: 20}}>
 					<h3>User: {user}</h3>
-					<ListLabel
-						lists={
-							lists.map(list => {return list.name})
-						}
-						activeList={activeList}
-						CreateList={(newList) => CreateList(newList)}
-						ChangeList={(newList: number) => setActiveList(newList)}
-					/>
-					<Filter
-						ApplyFilter={(x, y) => setFilterType(ExtractFilter(x, y))}
-					/>
+					<Grid>
+						<Grid.Column width={14}>
+							<ListLabel
+								lists={
+									lists.map(list => {return list.name})
+								}
+								activeList={activeList}
+								CreateList={(newList) => CreateList(newList)}
+								ChangeList={(newList: number) => setActiveList(newList)}
+							/>
+						</Grid.Column>
+						<Grid.Column floated='right'>
+							<Filter
+								ApplyFilter={(x, y) => setFilterType(ExtractFilter(x, y))}
+							/>
+						</Grid.Column>
+					</Grid>
 					<SegmentGroup>
 						<ListComponent 
 							items={

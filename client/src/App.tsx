@@ -35,7 +35,7 @@ export default function App() {
 				return;
 			}
 			try {
-				const itemsResponse: AxiosResponse<ItemResponse> = await axios.get('/api/items', { params: { user: 'Custom' } });
+				const itemsResponse: AxiosResponse<ItemResponse> = await axios.get('/api/items', { params: { user } });
 				setLists(itemsResponse.data.lists);
 				setActiveList(0);
 				// First list is always default
@@ -407,10 +407,14 @@ export default function App() {
 			}
 			{
 				!loading && user === '' &&
-				<Input 
-					placeholder='Username'
-					id='user_input'
-				/>
+				<div style={{paddingTop: 10}}>
+					<h4>Type in a name and press enter. If the user already exists, you will be presented with their tasks. Otherwise, a new user will be created for you.</h4>
+					<Input 
+						fluid
+						placeholder='Username'
+						id='user_input'
+					/>
+				</div>
 			}
 
 			{

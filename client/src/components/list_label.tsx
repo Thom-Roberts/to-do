@@ -96,14 +96,6 @@ export default function ListLabel(props: ListLabelProps) {
 		}
 	}, [ openListInput ]);
 
-	//const options: DropdownItemProps[] = lists.map((list, idx) => {
-	//	return {
-	//		key: list,
-	//		text: list,
-	//		value: idx
-	//	};
-	//});
-
 	return (
 		<div>
 			<Dropdown
@@ -113,7 +105,7 @@ export default function ListLabel(props: ListLabelProps) {
 				value={currentValue}
 				onChange={(e, data) => ChangeList(lists.indexOf(data.value as string))}
 			/>
-			<h4>List: {lists[activeList]}</h4>
+			<span style={{padding: '0 5px'}} />
 			<Button onClick={() => setOpenListInput(true)}>
 				<Icon name='plus' /> Create List
 			</Button>

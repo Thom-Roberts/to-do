@@ -18,6 +18,7 @@ export default function Filter(props: FilterProps) {
 	 */
 	useEffect(() => {
 		ApplyFilter(checkedStates[0], checkedStates[1]);
+		// eslint-disable-next-line
 	}, [ checkedStates ]);
 
 	function flipCheck(idx: number) {

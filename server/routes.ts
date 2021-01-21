@@ -65,7 +65,7 @@ router.route('/user').get(async (req, res) => {
 	catch(err) {
 		console.error('Something went wrong trying to create a user');
 		console.log(req.query);
-		res.sendStatus(500);
+		res.status(400).send(err);
 	}
 });
 
@@ -114,7 +114,7 @@ router.route('/items').get(async (req, res) => {
 	}
 	catch(err) {
 		console.error(err);
-		res.sendStatus(500);
+		res.status(400).send(err);
 	}
 });
 
@@ -132,7 +132,8 @@ router.route('/add_list').post(async (req, res) => {
 	const userObj = fileContents.filter(content => content.user === user);
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('User does not exist or duplicate detected. This should never happen.');
+		return;
 	}
 
 	// Test if list name exists already
@@ -171,14 +172,15 @@ router.route('/add_item').post(async (req, res) => {
 	const userObj = fileContents.filter(content => content.user === user);
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('User does not exist or duplicate detected. This should never happen.');
+		return;
 	}
 
 	const temp = userObj[0];
 	const temp2 = temp.lists.filter((l) => l.name === list);
 	if(temp2.length === 0 || temp2.length > 1) {
 		console.error('Duplicate lists found. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Duplicate lists found. This should never happen.');
 		return;
 	}
 
@@ -207,7 +209,7 @@ router.route('/update_task').put(async (req, res) => {
 	const userObj = fileContents.filter(content => content.user === user);
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('User does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 
@@ -215,14 +217,14 @@ router.route('/update_task').put(async (req, res) => {
 	const temp2 = temp.lists.filter((l) => l.name === list);
 	if(temp2.length === 0 || temp2.length > 1) {
 		console.error('Duplicate lists found. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Duplicate lists found. This should never happen.');
 		return;
 	}
 
 	const tempItemFilter = temp2[0].items.filter(item => item.guid === guid);
 	if(tempItemFilter.length === 0 || tempItemFilter.length > 1)  {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Item does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 
@@ -245,7 +247,7 @@ router.route('/toggle_complete').post(async (req, res) => {
 	const userObj = fileContents.filter(content => content.user === user);
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('User does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 
@@ -253,14 +255,14 @@ router.route('/toggle_complete').post(async (req, res) => {
 	const temp2 = temp.lists.filter((l) => l.name === list);
 	if(temp2.length === 0 || temp2.length > 1) {
 		console.error('Duplicate lists found. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Duplicate lists found. This should never happen.');
 		return;
 	}
 	
 	const item = temp2[0].items.filter(obj => obj.guid === task);
 	if(item.length === 0 || item.length > 1) {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Item does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 
@@ -284,7 +286,7 @@ router.route('/delete_item').delete(async (req, res) => {
 	const userObj = fileContents.filter(content => content.user === user);
 	if(userObj.length === 0 || userObj.length > 1) {
 		console.error('User does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('User does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 
@@ -293,7 +295,7 @@ router.route('/delete_item').delete(async (req, res) => {
 	const temp2 = temp.lists.filter((l) => l.name === list);
 	if(temp2.length === 0 || temp2.length > 1) {
 		console.error('Duplicate lists found. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Duplicate lists found. This should never happen.');
 		return;
 	}
 
@@ -301,7 +303,7 @@ router.route('/delete_item').delete(async (req, res) => {
 	
 	if(idx === -1) {
 		console.error('Item does not exist or duplicate detected. This should never happen.');
-		res.sendStatus(500);
+		res.status(400).send('Item does not exist or duplicate detected. This should never happen.');
 		return;
 	}
 

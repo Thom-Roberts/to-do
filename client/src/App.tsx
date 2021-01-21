@@ -102,16 +102,6 @@ export default function App() {
 		});
 	}, [ lists, activeList, filterType ]);
 
-	/**
-	 * Change list logic
-	 */
-	//useEffect(() => {
-	//	// Wait for initialization
-	//	if(activeList === -1)
-	//		return;
-	//	setItems(lists[activeList].items);
-	//}, [ lists, activeList ])
-
 	const handleAdd = useCallback(async(val: string) => {
 		// Add it to the list of items
 		const copy = items.slice();
@@ -249,7 +239,7 @@ export default function App() {
 				});
 			}
 		})();
-	}, [ editedText, items, activeList, user ]);
+	}, [ editedText, items, lists, activeList, user ]);
 
 	/**
 	 * Toggle complete logic
@@ -342,17 +332,19 @@ export default function App() {
 				//setItems(copy);
 			}
 		})();
-	}, [itemToDelete, activeList, lists, items]);
+	}, [itemToDelete, activeList, lists, items, user]);
 
 	async function GetUser(user: string) {
+		console.log('Called get user');
 		try {
 			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
-			console.dir(response);
+			
 			sessionStorage.setItem('User', user);
 			setUser(user);
 			// Get the default list
+			setLists(response.data.lists);
 			setActiveList(0);
-			setItems(response.data.lists[0].items);
+			//setItems(response.data.lists[0].items);
 		}
 		catch(err) {
 			if (err.response) {
@@ -377,11 +369,17 @@ export default function App() {
 			await axios.post('/api/add_list', { user, list: listName });
 
 			// Refresh data and set as new list
-			const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
-			const idx = response.data.lists.length - 1;
-			setLists(response.data.lists);
-			setActiveList(idx);
-			setItems(response.data.lists[idx].items);
+			//const response: AxiosResponse<ItemResponse> = await axios.get('/api/user', { params: {user}});
+			//const idx = response.data.lists.length - 1;
+			setLists((prevLists) => {
+				const slice = prevLists.slice();
+				slice.push({
+					name: listName,
+					items: [],
+				});
+				return slice;
+			});
+			setActiveList(lists.length);
 		}
 		catch(err: any) {
 			if (err.response) {
@@ -399,7 +397,7 @@ export default function App() {
 				console.log('Error', err.message);
 			}
 		}
-	}, [ user ]);
+	}, [ user, lists ]);
 
 	return (
 		<Container>

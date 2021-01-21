@@ -17,6 +17,16 @@ export default function ListLabel(props: ListLabelProps) {
 
 	const [ openListInput, setOpenListInput ] = useState(false);
 	const [ text, setText ] = useState('');
+	const [ currentValue, setCurrentValue ] = useState(lists[activeList]);
+	const [ options, setOptions ] = useState<DropdownItemProps[]>(() => {
+		return lists.map((list, idx) => {
+			return {
+				key: list,
+				text: list,
+				value: list
+			};
+		});
+	});
 
 	// Listen for enter if the input is active
 	useEffect(() => {
@@ -41,8 +51,28 @@ export default function ListLabel(props: ListLabelProps) {
 		element.addEventListener('keydown', enterPressed);
 
 		return () => element.removeEventListener('keydown', enterPressed);
-
+// eslint-disable-next-line
 	}, [ openListInput ]);
+
+	/**
+	 * Update the dropdown if the top level changes
+	 */
+	useEffect(() => {
+		// A new list was created but activelist hasn't been updated yet
+		if(lists.length < activeList)
+			return;
+
+		setOptions(() => {
+			return lists.map((list, idx) => {
+				return {
+					key: list,
+					text: list,
+					value: list
+				};
+			}); 
+		});
+		setCurrentValue(lists[activeList]);
+	}, [ lists, activeList ])
 
 	const Submit = useCallback((txt) => {
 		if(lists.findIndex((val) => val === txt) !== -1) {
@@ -53,6 +83,7 @@ export default function ListLabel(props: ListLabelProps) {
 		CreateList(txt);
 		setOpenListInput(false);
 		setText('');
+		// eslint-disable-next-line
 	}, [CreateList]);
 
 	useEffect(() => {
@@ -65,13 +96,13 @@ export default function ListLabel(props: ListLabelProps) {
 		}
 	}, [ openListInput ]);
 
-	const options: DropdownItemProps[] = lists.map((list, idx) => {
-		return {
-			key: list,
-			text: list,
-			value: idx
-		};
-	});
+	//const options: DropdownItemProps[] = lists.map((list, idx) => {
+	//	return {
+	//		key: list,
+	//		text: list,
+	//		value: idx
+	//	};
+	//});
 
 	return (
 		<div>
@@ -79,7 +110,8 @@ export default function ListLabel(props: ListLabelProps) {
 				selection
 				options={options}
 				placeholder={lists[activeList]}
-				onChange={(e, data) => ChangeList(data.value)}
+				value={currentValue}
+				onChange={(e, data) => ChangeList(lists.indexOf(data.value as string))}
 			/>
 			<h4>List: {lists[activeList]}</h4>
 			<Button onClick={() => setOpenListInput(true)}>

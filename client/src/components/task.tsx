@@ -44,6 +44,7 @@ export default function Task(props: ItemProps) {
 
 		return () => element.removeEventListener('keydown', enterPressed);
 		// Leaving out enterPressed dependency for now, still need to figure out how to not call multiple times
+		// eslint-disable-next-line
 	}, [ item ]);
 
 	// Update text when top level changes

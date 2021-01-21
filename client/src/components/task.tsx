@@ -28,15 +28,25 @@ export default function Task(props: ItemProps) {
 				return;
 			
 			doEdit(input.value, item.guid as string);
+			input.blur();
 		}
 	}, [ doEdit, item ]); 
 
 	useEffect(() => {	
 		const element = document.getElementById(item.guid as string);
 		
+		// There's an issue when spawning this item too fast when a new element is made
+		// This isn't a great fix, but it works for now :)
 		if(!element) {
-			console.error('Failed to find text input for item')
-			console.log(item);
+			setTimeout(() => {
+				const element = document.getElementById(item.guid as string) as HTMLElement;
+				if(!element) {
+					console.error('Failed to find text input for item')
+					console.log(item);
+				}
+				element.addEventListener('keydown', enterPressed);
+			}, 0);
+
 			return;
 		}
 		
